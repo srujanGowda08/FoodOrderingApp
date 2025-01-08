@@ -59,8 +59,8 @@ export default function App() {
               component={MenuScreen}
               options={{
                 title: "Food Menu",
-                headerLeft: null, // Disable back button in the header
-                gestureEnabled: false, // Disable swipe gesture to go back
+                headerLeft: null, 
+                gestureEnabled: false, 
               }}
             />
 

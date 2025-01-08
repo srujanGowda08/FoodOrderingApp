@@ -14,8 +14,9 @@ import {
 } from "react-native";
 import { collection, getDocs, getFirestore } from "firebase/firestore";
 import { Ionicons } from "@expo/vector-icons";
-import MenuItem from "../components/MenuItem"; // Custom component
-import CartButton from "../components/CartButton"; // Custom component
+import MenuItem from "../components/MenuItem";
+import CartButton from "../components/CartButton";
+import { MenuSkeleton } from "../components/MenuSkeleton";
 
 const { width } = Dimensions.get("window");
 const COLUMN_WIDTH = (width - 48) / 2;
@@ -57,6 +58,7 @@ const DAILY_SPECIALS = [
 ];
 
 export default function MenuScreen({ navigation }) {
+  const [loading, setLoading] = useState(true);
   const [menuItems, setMenuItems] = useState([]);
   const [filteredItems, setFilteredItems] = useState([]);
   const [searchText, setSearchText] = useState("");
@@ -65,30 +67,19 @@ export default function MenuScreen({ navigation }) {
   const scrollX = useRef(new Animated.Value(0)).current;
   const flatListRef = useRef(null);
 
-  useEffect(() => {
-    fetchMenuItems();
-    startAutoScroll();
-  }, []);
-
-  useEffect(() => {
-    filterItems();
-  }, [searchText, selectedCategory, menuItems]);
-
-  const fetchMenuItems = async () => {
-    try {
-      const db = getFirestore();
-      const querySnapshot = await getDocs(collection(db, "menuItems"));
-      const items = [];
-      querySnapshot.forEach((doc) => {
-        items.push({ id: doc.id, ...doc.data() });
-      });
-      setMenuItems(items);
-      setFilteredItems(items);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
+  const startAutoScroll = () => {
+    let scrollIndex = 0;
+    const scroll = () => {
+      if (flatListRef.current) {
+        scrollIndex = (scrollIndex + 1) % DAILY_SPECIALS.length;
+        flatListRef.current.scrollToIndex({
+          index: scrollIndex,
+          animated: true,
+        });
+      }
+      setTimeout(scroll, 4000);
+    };
+    scroll();
   };
 
   const filterItems = () => {
@@ -106,17 +97,36 @@ export default function MenuScreen({ navigation }) {
     setFilteredItems(filtered);
   };
 
-  const startAutoScroll = () => {
-    let scrollIndex = 0;
-    setInterval(() => {
-      scrollIndex =
-        scrollIndex < DAILY_SPECIALS.length - 1 ? scrollIndex + 1 : 0;
-      flatListRef.current?.scrollToIndex({
-        index: scrollIndex,
-        animated: true,
+  useEffect(() => {
+    fetchMenuItems();
+    startAutoScroll();
+  }, []);
+
+  useEffect(() => {
+    filterItems();
+  }, [searchText, selectedCategory, menuItems]);
+
+  const fetchMenuItems = async () => {
+    setLoading(true);
+    try {
+      const db = getFirestore();
+      const querySnapshot = await getDocs(collection(db, "menuItems"));
+      const items = [];
+      querySnapshot.forEach((doc) => {
+        items.push({ id: doc.id, ...doc.data() });
       });
-    }, 4000);
+      setMenuItems(items);
+      setFilteredItems(items);
+    } catch (err) {
+      console.error(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
+
+  if (loading) {
+    return <MenuSkeleton />;
+  }
 
   const renderSpecialsCarousel = () => (
     <View style={styles.specialsSection}>
@@ -146,7 +156,7 @@ export default function MenuScreen({ navigation }) {
                 {item.description}
               </Text>
               <Text style={styles.specialPrice}>
-                ${item.price.toFixed(2)} {item.discount && `(${item.discount})`}
+                ₹{item.price.toFixed(2)} {item.discount && `(${item.discount})`}
               </Text>
             </View>
           </View>
@@ -326,52 +336,60 @@ const styles = StyleSheet.create({
     color: "#333",
   },
   categoriesList: {
-    marginVertical: 16,
     paddingHorizontal: 16,
+    marginBottom: 16,
   },
   categoryItem: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     borderRadius: 20,
+    backgroundColor: "#fff",
     marginRight: 8,
-    backgroundColor: "#f0f0f0",
+    ...Platform.select({
+      ios: {
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: { elevation: 3 ,},
+    }),
   },
   selectedCategory: {
-    backgroundColor: "#ff7f50",
+    backgroundColor: "#f36c3d",
   },
   categoryText: {
     fontSize: 14,
-    color: "#666",
+    color: "#333",
   },
   selectedCategoryText: {
     color: "#fff",
   },
   menuTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#333",
+    fontSize: 20,
+    fontWeight: "700",
     marginHorizontal: 16,
-    marginVertical: 8,
+    marginBottom: 16,
+    color: "#333",
   },
   menuList: {
     paddingHorizontal: 16,
-    paddingBottom: 16,
+    paddingBottom: 100,
   },
   menuItemContainer: {
+    flex: 1,
     marginBottom: 16,
-    width: COLUMN_WIDTH,
   },
   leftColumn: {
-    marginRight: 16,
+    marginRight: 8,
   },
   rightColumn: {
-    marginLeft: 0,
+    marginLeft: 8,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "black",
-    marginHorizontal: 16,
-    marginVertical: 8,
+    fontSize: 20,
+    fontWeight: "700",
+    marginLeft: 18,
+    color: "#333",
   },
 });

@@ -1,17 +1,40 @@
-// components/CartItem.js
+// CartItem.js
 import React from "react";
-import { View, Text, Image, StyleSheet, TouchableOpacity } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  Animated,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useCart } from "../context/CartContext";
 
 const CartItem = ({ item }) => {
   const { updateQuantity, removeFromCart } = useCart();
+  const scaleValue = new Animated.Value(1);
+
+  const animatePress = () => {
+    Animated.sequence([
+      Animated.spring(scaleValue, {
+        toValue: 0.95,
+        useNativeDriver: true,
+      }),
+      Animated.spring(scaleValue, {
+        toValue: 1,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
   const handleIncrement = () => {
+    animatePress();
     updateQuantity(item.id, item.quantity + 1);
   };
 
   const handleDecrement = () => {
+    animatePress();
     if (item.quantity > 1) {
       updateQuantity(item.id, item.quantity - 1);
     } else {
@@ -19,12 +42,10 @@ const CartItem = ({ item }) => {
     }
   };
 
-  const handleRemove = () => {
-    removeFromCart(item.id);
-  };
-
   return (
-    <View style={styles.container}>
+    <Animated.View
+      style={[styles.container, { transform: [{ scale: scaleValue }] }]}
+    >
       <Image
         source={{ uri: item.imageUrl }}
         style={styles.image}
@@ -34,8 +55,11 @@ const CartItem = ({ item }) => {
       <View style={styles.detailsContainer}>
         <View style={styles.headerRow}>
           <Text style={styles.name}>{item.name}</Text>
-          <TouchableOpacity onPress={handleRemove} style={styles.removeButton}>
-            <Ionicons name="trash-outline" size={24} color="#ff4444" />
+          <TouchableOpacity
+            onPress={() => removeFromCart(item.id)}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          >
+            <Ionicons name="close-circle" size={24} color="#ff4444" />
           </TouchableOpacity>
         </View>
 
@@ -48,44 +72,46 @@ const CartItem = ({ item }) => {
             onPress={handleDecrement}
             style={styles.quantityButton}
           >
-            <Ionicons name="remove-circle-outline" size={24} color="#2ecc71" />
+            <Ionicons name="remove-circle-outline" size={24} color="#4CAF50" />
           </TouchableOpacity>
 
-          <Text style={styles.quantity}>{item.quantity}</Text>
+          <View style={styles.quantityWrapper}>
+            <Text style={styles.quantity}>{item.quantity}</Text>
+          </View>
 
           <TouchableOpacity
             onPress={handleIncrement}
             style={styles.quantityButton}
           >
-            <Ionicons name="add-circle-outline" size={24} color="#2ecc71" />
+            <Ionicons name="add-circle-outline" size={24} color="#4CAF50" />
           </TouchableOpacity>
         </View>
       </View>
-    </View>
+    </Animated.View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
-    padding: 16,
-    backgroundColor: "white",
-    borderRadius: 8,
-    marginVertical: 8,
-    marginHorizontal: 16,
+    backgroundColor: "#fff",
+    borderRadius: 16,
+    marginBottom: 16,
+    padding: 12,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
       height: 2,
     },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowRadius: 8,
+    elevation: 4,
   },
   image: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
+    width: 100,
+    height: 100,
+    borderRadius: 12,
+    backgroundColor: "#f5f5f5",
   },
   detailsContainer: {
     flex: 1,
@@ -94,37 +120,41 @@ const styles = StyleSheet.create({
   headerRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
+    alignItems: "flex-start",
   },
   name: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: "600",
+    color: "#333",
     flex: 1,
     marginRight: 8,
   },
   price: {
-    fontSize: 16,
-    color: "#2ecc71",
-    fontWeight: "600",
-    marginVertical: 4,
+    fontSize: 18,
+    color: "#4CAF50",
+    fontWeight: "700",
+    marginVertical: 8,
   },
   quantityContainer: {
     flexDirection: "row",
     alignItems: "center",
-    marginTop: 8,
+    marginTop: 4,
   },
   quantityButton: {
-    padding: 4,
+    padding: 8,
+  },
+  quantityWrapper: {
+    backgroundColor: "#f5f5f5",
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 8,
+    minWidth: 48,
+    alignItems: "center",
   },
   quantity: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: "600",
-    marginHorizontal: 16,
-    minWidth: 24,
-    textAlign: "center",
-  },
-  removeButton: {
-    padding: 4,
+    color: "#333",
   },
 });
 
